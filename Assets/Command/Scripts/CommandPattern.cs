@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class CommandPattern : MonoBehaviour
@@ -9,11 +8,13 @@ public class CommandPattern : MonoBehaviour
 
     // History stack for handing undo
     private Stack<ICommand> undoStack;
+    // History stack for handing redo
+    private Stack<ICommand> redoStack;
 
 
-    private void Start()
-    {
+    private void Start() {
         undoStack = new Stack<ICommand>();
+        redoStack = new Stack<ICommand>();
     }
 
     private void Update()
@@ -44,9 +45,7 @@ public class CommandPattern : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
-            Debug.Log("Not implemented redo yet");
-            // Todo:: Implement a redo feature
-            //Redo();
+            Redo();
         }
     }
 
@@ -68,15 +67,25 @@ public class CommandPattern : MonoBehaviour
         undoStack.Push(command);
     }
 
-    private void Undo()
-    {
+    private void Undo() {
         // Only if there are items in the stack
-        if (undoStack.Count > 0)
-        {
+        if (undoStack.Count > 0) {
             // Get and remove the last item from the stack
             ICommand command = undoStack.Pop();
+            redoStack.Push(command);
             // Undo the command
             command.Undo();
+        }
+    }
+
+    private void Redo() {
+        // Only if there are items in the stack
+        if (redoStack.Count > 0) {
+            // Get and remove the last item from the stack
+            ICommand command = redoStack.Pop();
+            // Undo the command
+            undoStack.Push(command);
+            command.Redo();
         }
     }
 }
@@ -95,6 +104,7 @@ public interface ICommand
 
     void Execute();
     void Undo();
+    void Redo();
 }
 
 // Target Command stores the target gameboject that we will wish to 
@@ -108,6 +118,7 @@ public abstract class TargetCommand : ICommand
 
     public abstract void Execute();
     public abstract void Undo();
+    public abstract void Redo();
 }
 
 
@@ -143,8 +154,10 @@ public abstract class MoveCommand : TargetCommand
     /// <summary>
     /// Reverse the action taken
     /// </summary>
-    public override void Undo()
-    {
+    public override void Undo() {
+        target.transform.position = oldPosition;
+    }
+    public override void Redo() {
         target.transform.position = oldPosition;
     }
 }
